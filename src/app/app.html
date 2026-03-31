@@ -1,0 +1,259 @@
+<main class="shell">
+  <header class="hero">
+    <p class="eyebrow">Pareja · Finanzas Cotidianas</p>
+    <h1>{{ title() }}</h1>
+    <p class="sub">Carga rapida hoy, analisis claro despues. Funciona sin internet y guarda localmente.</p>
+  </header>
+
+  <nav class="tabs" aria-label="Secciones principales">
+    <button type="button" [class.active]="activeTab() === 'carga'" (click)="setTab('carga')">Carga diaria</button>
+    <button type="button" [class.active]="activeTab() === 'reportes'" (click)="setTab('reportes')">Reportes</button>
+    <button type="button" [class.active]="activeTab() === 'catalogos'" (click)="setTab('catalogos')">Catalogos</button>
+  </nav>
+
+  @if (activeTab() === 'carga') {
+    <section class="panel" [formGroup]="expenseForm">
+      <h2>Nuevo gasto</h2>
+
+      <div class="grid">
+        <label>
+          Fecha
+          <input type="date" formControlName="expenseDate" />
+        </label>
+
+        <label>
+          Monto
+          <input type="number" step="0.01" placeholder="0.00" formControlName="amount" />
+        </label>
+
+        <label>
+          Categoria
+          <select formControlName="categoryId">
+            @for (category of activeCategories; track category.id) {
+              <option [value]="category.id">{{ category.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          Subcategoria
+          <select formControlName="subcategoryId">
+            @for (subcategory of getSubcategoriesByCategoryId(expenseForm.controls.categoryId.value ?? ''); track subcategory.id) {
+              <option [value]="subcategory.id">{{ subcategory.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          Persona
+          <select formControlName="person">
+            @for (person of activePeople; track person.id) {
+              <option [value]="person.name">{{ person.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          Lugar
+          <select formControlName="place">
+            @for (place of activePlaces; track place.id) {
+              <option [value]="place.name">{{ place.name }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <label>
+        Nota
+        <textarea rows="2" formControlName="note" placeholder="Opcional"></textarea>
+      </label>
+
+      <button class="save" type="button" (click)="saveExpense()">Guardar gasto</button>
+    </section>
+
+    <section class="panel">
+      <h2>Ultimos gastos</h2>
+      @if (expenses().length === 0) {
+        <p class="empty">Todavia no hay gastos guardados.</p>
+      } @else {
+        <ul class="list">
+          @for (expense of expenses().slice(0, 8); track expense.id) {
+            <li>
+              <strong>${{ expense.amount.toFixed(2) }}</strong>
+              <span>{{ expense.expenseDate }} · {{ expense.categoryName }} / {{ expense.subcategoryName }}</span>
+              <small>{{ expense.person }} · {{ expense.place }}</small>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  } @else if (activeTab() === 'reportes') {
+    <section class="panel" [formGroup]="reportForm">
+      <h2>Filtros</h2>
+      <div class="grid">
+        <label>
+          Desde
+          <input type="date" formControlName="from" />
+        </label>
+
+        <label>
+          Hasta
+          <input type="date" formControlName="to" />
+        </label>
+
+        <label>
+          Categoria
+          <select formControlName="categoryId">
+            <option value="">Todas</option>
+            @for (category of activeCategories; track category.id) {
+              <option [value]="category.id">{{ category.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          Subcategoria
+          <select formControlName="subcategoryId">
+            <option value="">Todas</option>
+            @for (subcategory of reportSubcategoryOptions; track subcategory.id) {
+              <option [value]="subcategory.id">{{ subcategory.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          Persona
+          <select formControlName="person">
+            <option value="">Todas</option>
+            @for (person of activePeople; track person.id) {
+              <option [value]="person.name">{{ person.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          Lugar
+          <select formControlName="place">
+            <option value="">Todos</option>
+            @for (place of activePlaces; track place.id) {
+              <option [value]="place.name">{{ place.name }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel stats">
+      <article>
+        <h3>Total filtrado</h3>
+        <p>${{ reportTotal.toFixed(2) }}</p>
+      </article>
+      <article>
+        <h3>Registros</h3>
+        <p>{{ filteredExpenses.length }}</p>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>Gasto por persona</h2>
+      @if (totalsByPerson.length === 0) {
+        <p class="empty">Sin datos para el filtro actual.</p>
+      } @else {
+        <ul class="list compact">
+          @for (row of totalsByPerson; track row.person) {
+            <li>
+              <span>{{ row.person }}</span>
+              <strong>${{ row.total.toFixed(2) }}</strong>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  } @else {
+    <section class="panel" [formGroup]="catalogForm">
+      <h2>ABM de Catalogos</h2>
+      <div class="catalog-grid">
+        <article class="catalog-card">
+          <h3>Personas</h3>
+          <div class="inline-form">
+            <input type="text" formControlName="personName" placeholder="Nueva persona" />
+            <button type="button" (click)="addPerson()">Agregar</button>
+          </div>
+          <ul class="list compact">
+            @for (person of activePeople; track person.id) {
+              <li>
+                <span>{{ person.name }}</span>
+                <button type="button" class="soft" (click)="deactivatePerson(person.id)">Desactivar</button>
+              </li>
+            }
+          </ul>
+        </article>
+
+        <article class="catalog-card">
+          <h3>Lugares</h3>
+          <div class="inline-form">
+            <input type="text" formControlName="placeName" placeholder="Nuevo lugar" />
+            <button type="button" (click)="addPlace()">Agregar</button>
+          </div>
+          <ul class="list compact">
+            @for (place of activePlaces; track place.id) {
+              <li>
+                <span>{{ place.name }}</span>
+                <button type="button" class="soft" (click)="deactivatePlace(place.id)">Desactivar</button>
+              </li>
+            }
+          </ul>
+        </article>
+
+        <article class="catalog-card">
+          <h3>Categorias</h3>
+          <div class="inline-form">
+            <input type="text" formControlName="categoryName" placeholder="Nueva categoria" />
+            <button type="button" (click)="addCategory()">Agregar</button>
+          </div>
+          <ul class="list compact">
+            @for (category of activeCategories; track category.id) {
+              <li>
+                <span>{{ category.name }}</span>
+                <button type="button" class="soft" (click)="deactivateCategory(category.id)">Desactivar</button>
+              </li>
+            }
+          </ul>
+        </article>
+
+        <article class="catalog-card">
+          <h3>Subcategorias</h3>
+          <div class="inline-form stacked">
+            <select formControlName="subcategoryCategoryId">
+              @for (category of activeCategories; track category.id) {
+                <option [value]="category.id">{{ category.name }}</option>
+              }
+            </select>
+            <input type="text" formControlName="subcategoryName" placeholder="Nueva subcategoria" />
+            <button type="button" (click)="addSubcategory()">Agregar</button>
+          </div>
+
+          @for (category of activeCategories; track category.id) {
+            <h4>{{ category.name }}</h4>
+            <ul class="list compact">
+              @for (subcategory of category.subcategories; track subcategory.id) {
+                @if (subcategory.isActive) {
+                  <li>
+                    <span>{{ subcategory.name }}</span>
+                    <button
+                      type="button"
+                      class="soft"
+                      (click)="deactivateSubcategory(category.id, subcategory.id)"
+                    >
+                      Desactivar
+                    </button>
+                  </li>
+                }
+              }
+            </ul>
+          }
+        </article>
+      </div>
+    </section>
+  }
+</main>

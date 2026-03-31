@@ -1,0 +1,249 @@
+:host {
+	--ink: #182126;
+	--paper: #fff9ed;
+	--teal: #0e7c7b;
+	--teal-soft: #d8f1eb;
+	--orange: #ff7a45;
+	--orange-deep: #f35f2d;
+	--line: #d9d3c4;
+	display: block;
+	min-height: 100dvh;
+	background:
+		radial-gradient(130% 120% at 0% 0%, #ffd8b6 0%, transparent 55%),
+		radial-gradient(80% 60% at 100% 100%, #c3ece3 0%, transparent 60%),
+		var(--paper);
+	color: var(--ink);
+}
+
+.shell {
+	max-width: 920px;
+	margin: 0 auto;
+	padding: 1rem 0.9rem 3rem;
+}
+
+.hero {
+	animation: rise-in 420ms ease-out both;
+}
+
+.eyebrow {
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	font-size: 0.72rem;
+	color: color-mix(in srgb, var(--ink) 65%, white 35%);
+	margin: 0;
+}
+
+h1 {
+	margin: 0.25rem 0 0;
+	font-size: clamp(1.7rem, 3.4vw, 2.5rem);
+	line-height: 1.1;
+}
+
+.sub {
+	margin-top: 0.35rem;
+	max-width: 60ch;
+	color: color-mix(in srgb, var(--ink) 80%, white 20%);
+}
+
+.tabs {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 0.6rem;
+	margin: 1rem 0;
+}
+
+.tabs button {
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	padding: 0.7rem 0.9rem;
+	background: #ffffffcc;
+	color: var(--ink);
+	font-weight: 700;
+}
+
+.tabs button.active {
+	background: linear-gradient(120deg, var(--teal), #27a39c);
+	border-color: transparent;
+	color: white;
+}
+
+.panel {
+	background: #fffdf8d9;
+	border: 1px solid var(--line);
+	border-radius: 18px;
+	padding: 0.9rem;
+	margin-top: 0.8rem;
+	animation: rise-in 360ms ease-out both;
+}
+
+h2 {
+	margin: 0 0 0.65rem;
+	font-size: 1.06rem;
+}
+
+.grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0.65rem;
+}
+
+label {
+	display: grid;
+	gap: 0.35rem;
+	font-weight: 600;
+	font-size: 0.92rem;
+}
+
+input,
+select,
+textarea {
+	border: 1px solid color-mix(in srgb, var(--line) 70%, #c2beaf 30%);
+	border-radius: 12px;
+	padding: 0.68rem 0.75rem;
+	background: #ffffff;
+	color: var(--ink);
+	font: inherit;
+}
+
+textarea {
+	resize: vertical;
+}
+
+.save {
+	width: 100%;
+	margin-top: 0.75rem;
+	border: 0;
+	border-radius: 14px;
+	padding: 0.85rem 1rem;
+	font-size: 1.02rem;
+	font-weight: 800;
+	background: linear-gradient(120deg, var(--orange), var(--orange-deep));
+	color: white;
+}
+
+.list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: 0.55rem;
+}
+
+.list li {
+	background: var(--teal-soft);
+	border: 1px solid color-mix(in srgb, var(--teal-soft) 45%, var(--teal) 55%);
+	border-radius: 12px;
+	padding: 0.58rem 0.7rem;
+	display: grid;
+	gap: 0.12rem;
+}
+
+.list.compact li {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.stats {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.7rem;
+}
+
+.stats article {
+	border-radius: 14px;
+	padding: 0.65rem;
+	background: #fff4e8;
+	border: 1px solid #f2ceb4;
+}
+
+.stats h3 {
+	margin: 0;
+	font-size: 0.82rem;
+	color: color-mix(in srgb, var(--ink) 75%, white 25%);
+}
+
+.stats p {
+	margin: 0.2rem 0 0;
+	font-size: 1.3rem;
+	font-weight: 800;
+}
+
+.catalog-grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0.7rem;
+}
+
+.catalog-card {
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 0.7rem;
+	background: #fffcf2;
+}
+
+.catalog-card h3 {
+	margin: 0 0 0.5rem;
+}
+
+.catalog-card h4 {
+	margin: 0.55rem 0 0.3rem;
+	font-size: 0.85rem;
+}
+
+.inline-form {
+	display: grid;
+	gap: 0.4rem;
+	grid-template-columns: 1fr auto;
+	margin-bottom: 0.55rem;
+}
+
+.inline-form.stacked {
+	grid-template-columns: 1fr;
+}
+
+.inline-form button,
+.soft {
+	border: 0;
+	border-radius: 10px;
+	padding: 0.5rem 0.7rem;
+	background: var(--teal);
+	color: white;
+	font-weight: 700;
+}
+
+.soft {
+	background: #d95d39;
+	font-size: 0.78rem;
+	padding: 0.35rem 0.6rem;
+}
+
+.empty {
+	margin: 0;
+	color: color-mix(in srgb, var(--ink) 70%, white 30%);
+}
+
+@media (min-width: 760px) {
+	.grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.catalog-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.shell {
+		padding: 1.5rem 1.25rem 3.2rem;
+	}
+}
+
+@keyframes rise-in {
+	from {
+		opacity: 0;
+		transform: translateY(12px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
