@@ -2,7 +2,9 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-const API_URL = 'http://localhost:4000';
+const API_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost' 
+  ? '/api'  // En producción, usa rutas relativas (proxy)
+  : 'http://localhost:4000';  // En desarrollo, usa localhost
 
 export interface Person {
   id: string;
