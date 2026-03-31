@@ -1,18 +1,18 @@
 # Build settings for Netlify
 [build]
   command = "pnpm build"
-  publish = "dist/gastos-frontend"
-
-# Redirect all SPA requests to index.html
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+  publish = "dist/gastos-frontend/browser"
 
 # Proxy API requests to backend
 [[redirects]]
   from = "/api/*"
   to = "https://gastos-backend-production.herokuapp.com/:splat"
+  status = 200
+
+# Redirect all SPA requests to index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
   status = 200
 
 # Security headers
