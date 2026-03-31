@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ApiService, Person, Place, Category, Subcategory as ApiSubcategory } from './api.service';
 
 type Tab = 'carga' | 'reportes' | 'catalogos';
 
@@ -14,13 +15,6 @@ type Subcategory = {
   id: string;
   name: string;
   isActive: boolean;
-};
-
-type Category = {
-  id: string;
-  name: string;
-  isActive: boolean;
-  subcategories: Subcategory[];
 };
 
 type ExpenseRecord = {
@@ -47,9 +41,12 @@ const CATALOGS_STORAGE_KEY = 'gastos_catalogos_v1';
 })
 export class App implements OnInit {
   private readonly fb = inject(FormBuilder);
+  private readonly api = inject(ApiService);
 
   protected readonly title = signal('Registro de Gastos');
   protected readonly activeTab = signal<Tab>('carga');
+  protected readonly isLoading = signal(false);
+  protected readonly errorMessage = signal('');
 
   protected readonly categories = signal<Category[]>([
     {
@@ -136,19 +133,87 @@ export class App implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadCatalogsFromStorage();
+    this.loadData();
+  }
 
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw) as ExpenseRecord[];
-        this.expenses.set(parsed);
-      } catch {
-        this.expenses.set([]);
+  private loadData(): void {
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+
+    // Load categories first (needed for subcategories)
+    this.api.getCategories().subscribe({
+      next: (categories) => {
+        this.categories.set(
+          categories.map((cat) => ({
+            id: cat.id,
+            name: cat.name,
+            isActive: cat.isActive,
+            subcategories: cat.subcategories || []
+          }))
+        );
+        this.ensureFormDefaults();
+      },
+      error: (err) => {
+        console.error('Error loading categories:', err);
+        this.errorMessage.set('Error cargando categorías');
+        this.loadCatalogsFromStorage();
       }
-    }
+    });
 
-    this.ensureFormDefaults();
+    // Load people
+    this.api.getPeople().subscribe({
+      next: (people) => {
+        this.people.set(people.map((p) => ({ id: p.id, name: p.name, isActive: p.isActive })));
+        this.ensureFormDefaults();
+      },
+      error: (err) => {
+        console.error('Error loading people:', err);
+        this.loadCatalogsFromStorage();
+      }
+    });
+
+    // Load places
+    this.api.getPlaces().subscribe({
+      next: (places) => {
+        this.places.set(places.map((p) => ({ id: p.id, name: p.name, isActive: p.isActive })));
+        this.ensureFormDefaults();
+      },
+      error: (err) => {
+        console.error('Error loading places:', err);
+        this.loadCatalogsFromStorage();
+      }
+    });
+
+    // Load expenses
+    this.api.getExpenses().subscribe({
+      next: (expenses) => {
+        this.expenses.set(
+          expenses.map((exp) => {
+            const person = this.people().find((p) => p.id === exp.personId);
+            const place = this.places().find((p) => p.id === exp.placeId);
+            return {
+              id: exp.id,
+              expenseDate: exp.expenseDate,
+              amount: exp.amount,
+              categoryId: exp.categoryId,
+              categoryName: this.categories().find((c) => c.id === exp.categoryId)?.name ?? 'Unknown',
+              subcategoryId: exp.subcategoryId,
+              subcategoryName: this.categories()
+                .find((c) => c.id === exp.categoryId)
+                ?.subcategories.find((s) => s.id === exp.subcategoryId)?.name ?? 'Unknown',
+              place: place?.name ?? 'Unknown',
+              person: person?.name ?? 'Unknown',
+              note: exp.note ?? ''
+            };
+          })
+        );
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Error loading expenses:', err);
+        this.isLoading.set(false);
+      }
+    });
   }
 
   protected setTab(tab: Tab): void {
@@ -169,26 +234,43 @@ export class App implements OnInit {
       return;
     }
 
-    const next: ExpenseRecord = {
-      id: crypto.randomUUID(),
-      expenseDate: value.expenseDate,
-      amount: Number(value.amount),
-      categoryId: category.id,
-      categoryName: category.name,
-      subcategoryId: subcategory.id,
-      subcategoryName: subcategory.name,
-      place: value.place,
-      person: value.person,
-      note: value.note ?? ''
-    };
+    this.api
+      .createExpense({
+        expenseDate: value.expenseDate,
+        amount: Number(value.amount),
+        categoryId: category.id,
+        subcategoryId: subcategory.id,
+        personId: value.person,
+        placeId: value.place,
+        note: value.note ?? ''
+      })
+      .subscribe({
+        next: (expense) => {
+          const newExpense: ExpenseRecord = {
+            id: expense.id,
+            expenseDate: expense.expenseDate,
+            amount: expense.amount,
+            categoryId: expense.categoryId,
+            categoryName: category.name,
+            subcategoryId: expense.subcategoryId,
+            subcategoryName: subcategory.name,
+            place: expense.placeId,
+            person: expense.personId,
+            note: expense.note ?? ''
+          };
 
-    this.expenses.update((current) => [next, ...current]);
-    this.persistExpenses();
+          this.expenses.update((current) => [newExpense, ...current]);
 
-    this.expenseForm.patchValue({
-      amount: null,
-      note: ''
-    });
+          this.expenseForm.patchValue({
+            amount: null,
+            note: ''
+          });
+        },
+        error: (err) => {
+          console.error('Error saving expense:', err);
+          this.errorMessage.set('Error al guardar el gasto');
+        }
+      });
   }
 
   protected get filteredExpenses(): ExpenseRecord[] {
@@ -239,16 +321,30 @@ export class App implements OnInit {
     if (!name) return;
     if (this.people().some((item) => item.name.toLowerCase() === name.toLowerCase() && item.isActive)) return;
 
-    this.people.update((current) => [...current, { id: crypto.randomUUID(), name, isActive: true }]);
-    this.catalogForm.patchValue({ personName: '' });
-    this.persistCatalogs();
-    this.ensureFormDefaults();
+    this.api.createPerson(name).subscribe({
+      next: (person) => {
+        this.people.update((current) => [...current, { id: person.id, name: person.name, isActive: person.isActive }]);
+        this.catalogForm.patchValue({ personName: '' });
+        this.ensureFormDefaults();
+      },
+      error: (err) => {
+        console.error('Error adding person:', err);
+        this.errorMessage.set('Error al agregar persona');
+      }
+    });
   }
 
   protected deactivatePerson(id: string): void {
-    this.people.update((current) => current.map((item) => (item.id === id ? { ...item, isActive: false } : item)));
-    this.persistCatalogs();
-    this.ensureFormDefaults();
+    this.api.deactivatePerson(id).subscribe({
+      next: () => {
+        this.people.update((current) => current.map((item) => (item.id === id ? { ...item, isActive: false } : item)));
+        this.ensureFormDefaults();
+      },
+      error: (err) => {
+        console.error('Error deactivating person:', err);
+        this.errorMessage.set('Error al desactivar persona');
+      }
+    });
   }
 
   protected addPlace(): void {
@@ -256,16 +352,30 @@ export class App implements OnInit {
     if (!name) return;
     if (this.places().some((item) => item.name.toLowerCase() === name.toLowerCase() && item.isActive)) return;
 
-    this.places.update((current) => [...current, { id: crypto.randomUUID(), name, isActive: true }]);
-    this.catalogForm.patchValue({ placeName: '' });
-    this.persistCatalogs();
-    this.ensureFormDefaults();
+    this.api.createPlace(name).subscribe({
+      next: (place) => {
+        this.places.update((current) => [...current, { id: place.id, name: place.name, isActive: place.isActive }]);
+        this.catalogForm.patchValue({ placeName: '' });
+        this.ensureFormDefaults();
+      },
+      error: (err) => {
+        console.error('Error adding place:', err);
+        this.errorMessage.set('Error al agregar lugar');
+      }
+    });
   }
 
   protected deactivatePlace(id: string): void {
-    this.places.update((current) => current.map((item) => (item.id === id ? { ...item, isActive: false } : item)));
-    this.persistCatalogs();
-    this.ensureFormDefaults();
+    this.api.deactivatePlace(id).subscribe({
+      next: () => {
+        this.places.update((current) => current.map((item) => (item.id === id ? { ...item, isActive: false } : item)));
+        this.ensureFormDefaults();
+      },
+      error: (err) => {
+        console.error('Error deactivating place:', err);
+        this.errorMessage.set('Error al desactivar lugar');
+      }
+    });
   }
 
   protected addCategory(): void {
@@ -273,34 +383,48 @@ export class App implements OnInit {
     if (!name) return;
     if (this.categories().some((item) => item.name.toLowerCase() === name.toLowerCase() && item.isActive)) return;
 
-    this.categories.update((current) => [
-      ...current,
-      {
-        id: crypto.randomUUID(),
-        name,
-        isActive: true,
-        subcategories: []
+    this.api.createCategory(name).subscribe({
+      next: (category) => {
+        this.categories.update((current) => [
+          ...current,
+          {
+            id: category.id,
+            name: category.name,
+            isActive: category.isActive,
+            subcategories: category.subcategories || []
+          }
+        ]);
+        this.catalogForm.patchValue({ categoryName: '' });
+        this.ensureFormDefaults();
+      },
+      error: (err) => {
+        console.error('Error adding category:', err);
+        this.errorMessage.set('Error al agregar categoría');
       }
-    ]);
-    this.catalogForm.patchValue({ categoryName: '' });
-    this.persistCatalogs();
-    this.ensureFormDefaults();
+    });
   }
 
   protected deactivateCategory(id: string): void {
-    this.categories.update((current) =>
-      current.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              isActive: false,
-              subcategories: item.subcategories.map((sub) => ({ ...sub, isActive: false }))
-            }
-          : item
-      )
-    );
-    this.persistCatalogs();
-    this.ensureFormDefaults();
+    this.api.deactivateCategory(id).subscribe({
+      next: () => {
+        this.categories.update((current) =>
+          current.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  isActive: false,
+                  subcategories: item.subcategories.map((sub) => ({ ...sub, isActive: false }))
+                }
+              : item
+          )
+        );
+        this.ensureFormDefaults();
+      },
+      error: (err) => {
+        console.error('Error deactivating category:', err);
+        this.errorMessage.set('Error al desactivar categoría');
+      }
+    });
   }
 
   protected addSubcategory(): void {
@@ -308,46 +432,53 @@ export class App implements OnInit {
     const name = this.catalogForm.controls.subcategoryName.value?.trim();
     if (!categoryId || !name) return;
 
-    this.categories.update((current) =>
-      current.map((item) => {
-        if (item.id !== categoryId) return item;
-
-        const alreadyExists = item.subcategories.some(
-          (sub) => sub.name.toLowerCase() === name.toLowerCase() && sub.isActive
+    this.api.createSubcategory(categoryId, name).subscribe({
+      next: (subcategory) => {
+        this.categories.update((current) =>
+          current.map((item) => {
+            if (item.id !== categoryId) return item;
+            return {
+              ...item,
+              subcategories: [...item.subcategories, { id: subcategory.id, name: subcategory.name, isActive: subcategory.isActive }]
+            };
+          })
         );
-
-        if (alreadyExists) return item;
-
-        return {
-          ...item,
-          subcategories: [...item.subcategories, { id: crypto.randomUUID(), name, isActive: true }]
-        };
-      })
-    );
-
-    this.catalogForm.patchValue({ subcategoryName: '' });
-    this.persistCatalogs();
-    this.ensureFormDefaults();
+        this.catalogForm.patchValue({ subcategoryName: '' });
+        this.ensureFormDefaults();
+      },
+      error: (err) => {
+        console.error('Error adding subcategory:', err);
+        this.errorMessage.set('Error al agregar subcategoría');
+      }
+    });
   }
 
   protected deactivateSubcategory(categoryId: string, subcategoryId: string): void {
-    this.categories.update((current) =>
-      current.map((item) => {
-        if (item.id !== categoryId) return item;
-        return {
-          ...item,
-          subcategories: item.subcategories.map((sub) =>
-            sub.id === subcategoryId ? { ...sub, isActive: false } : sub
-          )
-        };
-      })
-    );
-    this.persistCatalogs();
-    this.ensureFormDefaults();
+    this.api.deactivateSubcategory(subcategoryId).subscribe({
+      next: () => {
+        this.categories.update((current) =>
+          current.map((item) => {
+            if (item.id !== categoryId) return item;
+            return {
+              ...item,
+              subcategories: item.subcategories.map((sub) =>
+                sub.id === subcategoryId ? { ...sub, isActive: false } : sub
+              )
+            };
+          })
+        );
+        this.ensureFormDefaults();
+      },
+      error: (err) => {
+        console.error('Error deactivating subcategory:', err);
+        this.errorMessage.set('Error al desactivar subcategoría');
+      }
+    });
   }
 
   private persistExpenses(): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.expenses()));
+    // API is now responsible for persistence
+    // This method is kept for backward compatibility if needed
   }
 
   protected getSubcategoriesByCategoryId(categoryId: string): Subcategory[] {
@@ -373,24 +504,24 @@ export class App implements OnInit {
         ? selectedSubcategoryId
         : expenseSubcategories[0]?.id ?? '';
 
-    const selectedPerson = this.expenseForm.controls.person.value ?? '';
-    const personValue =
-      selectedPerson && this.activePeople.some((person) => person.name === selectedPerson)
-        ? selectedPerson
-        : this.activePeople[0]?.name ?? '';
+    const selectedPersonId = this.expenseForm.controls.person.value ?? '';
+    const personIdValue =
+      selectedPersonId && this.activePeople.some((person) => person.id === selectedPersonId)
+        ? selectedPersonId
+        : this.activePeople[0]?.id ?? '';
 
-    const selectedPlace = this.expenseForm.controls.place.value ?? '';
-    const placeValue =
-      selectedPlace && this.activePlaces.some((place) => place.name === selectedPlace)
-        ? selectedPlace
-        : this.activePlaces[0]?.name ?? '';
+    const selectedPlaceId = this.expenseForm.controls.place.value ?? '';
+    const placeIdValue =
+      selectedPlaceId && this.activePlaces.some((place) => place.id === selectedPlaceId)
+        ? selectedPlaceId
+        : this.activePlaces[0]?.id ?? '';
 
     this.expenseForm.patchValue(
       {
         categoryId: expenseCategoryId,
         subcategoryId: expenseSubcategoryId,
-        person: personValue,
-        place: placeValue
+        person: personIdValue,
+        place: placeIdValue
       },
       { emitEvent: false }
     );
@@ -406,15 +537,7 @@ export class App implements OnInit {
     }
   }
 
-  private persistCatalogs(): void {
-    const payload = {
-      people: this.people(),
-      places: this.places(),
-      categories: this.categories()
-    };
-    localStorage.setItem(CATALOGS_STORAGE_KEY, JSON.stringify(payload));
-  }
-
+  // Backup method for loading from localStorage (fallback if API is unavailable)
   private loadCatalogsFromStorage(): void {
     const raw = localStorage.getItem(CATALOGS_STORAGE_KEY);
     if (!raw) return;

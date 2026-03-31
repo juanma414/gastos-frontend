@@ -5,6 +5,19 @@
     <p class="sub">Carga rapida hoy, analisis claro despues. Funciona sin internet y guarda localmente.</p>
   </header>
 
+  @if (errorMessage()) {
+    <div class="error-banner">
+      {{ errorMessage() }}
+      <button type="button" (click)="errorMessage.set('')">✕</button>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-banner">
+      Cargando datos...
+    </div>
+  }
+
   <nav class="tabs" aria-label="Secciones principales">
     <button type="button" [class.active]="activeTab() === 'carga'" (click)="setTab('carga')">Carga diaria</button>
     <button type="button" [class.active]="activeTab() === 'reportes'" (click)="setTab('reportes')">Reportes</button>
@@ -48,7 +61,7 @@
           Persona
           <select formControlName="person">
             @for (person of activePeople; track person.id) {
-              <option [value]="person.name">{{ person.name }}</option>
+              <option [value]="person.id">{{ person.name }}</option>
             }
           </select>
         </label>
@@ -57,7 +70,7 @@
           Lugar
           <select formControlName="place">
             @for (place of activePlaces; track place.id) {
-              <option [value]="place.name">{{ place.name }}</option>
+              <option [value]="place.id">{{ place.name }}</option>
             }
           </select>
         </label>
