@@ -7,7 +7,10 @@
     @if (isAuthenticated) {
       <div class="session-bar">
         <span>Sesión: <strong>{{ currentUser()?.name }}</strong> ({{ currentUser()?.role }})</span>
-        <button type="button" class="soft" (click)="logout()">Cerrar sesión</button>
+        <div class="session-actions">
+          <button type="button" class="icon-btn" (click)="openProfile()" aria-label="Ir a perfil">👤</button>
+          <button type="button" class="soft" (click)="logout()">Cerrar sesión</button>
+        </div>
       </div>
     }
   </header>
@@ -43,32 +46,37 @@
       <p class="empty creds">Usuarios iniciales: juan@gastos.local / Juan1234 y ludmi@gastos.local / Ludmi1234</p>
     </section>
   } @else {
-    <section class="panel" [formGroup]="passwordForm">
-      <h2>Cambiar contraseña</h2>
-      <div class="grid">
-        <label>
-          Contraseña actual
-          <input type="password" formControlName="currentPassword" />
-        </label>
-        <label>
-          Nueva contraseña
-          <input type="password" formControlName="newPassword" />
-        </label>
-        <label>
-          Confirmar nueva contraseña
-          <input type="password" formControlName="confirmPassword" />
-        </label>
-      </div>
-      <button type="button" class="save" (click)="changeMyPassword()">Actualizar contraseña</button>
-    </section>
+    @if (activeTab() !== 'perfil') {
+      <nav class="tabs" aria-label="Secciones principales">
+        <button type="button" [class.active]="activeTab() === 'carga'" (click)="setTab('carga')">Carga diaria</button>
+        <button type="button" [class.active]="activeTab() === 'reportes'" (click)="setTab('reportes')">Reportes</button>
+        <button type="button" [class.active]="activeTab() === 'catalogos'" (click)="setTab('catalogos')">Catalogos</button>
+      </nav>
+    }
 
-    <nav class="tabs" aria-label="Secciones principales">
-      <button type="button" [class.active]="activeTab() === 'carga'" (click)="setTab('carga')">Carga diaria</button>
-      <button type="button" [class.active]="activeTab() === 'reportes'" (click)="setTab('reportes')">Reportes</button>
-      <button type="button" [class.active]="activeTab() === 'catalogos'" (click)="setTab('catalogos')">Catalogos</button>
-    </nav>
-
-    @if (activeTab() === 'carga') {
+    @if (activeTab() === 'perfil') {
+      <section class="panel" [formGroup]="passwordForm">
+        <h2>Perfil · Cambiar contraseña</h2>
+        <div class="grid">
+          <label>
+            Contraseña actual
+            <input type="password" formControlName="currentPassword" />
+          </label>
+          <label>
+            Nueva contraseña
+            <input type="password" formControlName="newPassword" />
+          </label>
+          <label>
+            Confirmar nueva contraseña
+            <input type="password" formControlName="confirmPassword" />
+          </label>
+        </div>
+        <div class="profile-actions">
+          <button type="button" class="soft" (click)="setTab('carga')">Volver</button>
+          <button type="button" class="save profile-save" (click)="changeMyPassword()">Actualizar contraseña</button>
+        </div>
+      </section>
+    } @else if (activeTab() === 'carga') {
     <section class="panel" [formGroup]="expenseForm">
       <h2>Nuevo gasto</h2>
 

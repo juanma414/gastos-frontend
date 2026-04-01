@@ -3,7 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiService, AuthUser, Category, UserRole } from './api.service';
 
-type Tab = 'carga' | 'reportes' | 'catalogos';
+type Tab = 'carga' | 'reportes' | 'catalogos' | 'perfil';
 
 type NamedCatalogItem = {
   id: string;
@@ -215,6 +215,11 @@ export class App implements OnInit {
     this.expenses.set([]);
     this.errorMessage.set('');
     this.passwordForm.reset();
+    this.activeTab.set('carga');
+  }
+
+  protected openProfile(): void {
+    this.activeTab.set('perfil');
   }
 
   protected changeMyPassword(): void {
