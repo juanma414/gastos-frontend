@@ -353,20 +353,21 @@ export class App implements OnInit {
       next: (expenses) => {
         this.expenses.set(
           expenses.map((exp) => {
-            const person = this.people().find((p) => p.id === exp.personId);
-            const place = this.places().find((p) => p.id === exp.placeId);
             return {
               id: exp.id,
-              expenseDate: exp.expenseDate,
+              expenseDate: this.toDateOnly(exp.expenseDate),
               amount: exp.amount,
               categoryId: exp.categoryId,
-              categoryName: this.categories().find((c) => c.id === exp.categoryId)?.name ?? 'Unknown',
+              categoryName: exp.category?.name ?? this.categories().find((c) => c.id === exp.categoryId)?.name ?? 'Unknown',
               subcategoryId: exp.subcategoryId,
-              subcategoryName: this.categories()
-                .find((c) => c.id === exp.categoryId)
-                ?.subcategories.find((s) => s.id === exp.subcategoryId)?.name ?? 'Unknown',
-              place: place?.name ?? 'Unknown',
-              person: person?.name ?? 'Unknown',
+              subcategoryName:
+                exp.subcategory?.name ??
+                this.categories()
+                  .find((c) => c.id === exp.categoryId)
+                  ?.subcategories.find((s) => s.id === exp.subcategoryId)?.name ??
+                'Unknown',
+              place: exp.place?.name ?? this.places().find((p) => p.id === exp.placeId)?.name ?? 'Unknown',
+              person: exp.person?.name ?? this.people().find((p) => p.id === exp.personId)?.name ?? 'Unknown',
               note: exp.note ?? ''
             };
           })
@@ -415,14 +416,14 @@ export class App implements OnInit {
 
           const newExpense: ExpenseRecord = {
             id: expense.id,
-            expenseDate: expense.expenseDate,
+            expenseDate: this.toDateOnly(expense.expenseDate),
             amount: expense.amount,
             categoryId: expense.categoryId,
-            categoryName: category.name,
+            categoryName: expense.category?.name ?? category.name,
             subcategoryId: expense.subcategoryId,
-            subcategoryName: subcategory.name,
-            place: place?.name ?? 'Unknown',
-            person: person?.name ?? 'Unknown',
+            subcategoryName: expense.subcategory?.name ?? subcategory.name,
+            place: expense.place?.name ?? place?.name ?? 'Unknown',
+            person: expense.person?.name ?? person?.name ?? 'Unknown',
             note: expense.note ?? ''
           };
 
@@ -793,5 +794,9 @@ export class App implements OnInit {
     const date = new Date();
     date.setDate(1);
     return date.toISOString().slice(0, 10);
+  }
+
+  private toDateOnly(value: string): string {
+    return value.slice(0, 10);
   }
 }

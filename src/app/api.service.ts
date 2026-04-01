@@ -64,6 +64,10 @@ export interface Expense {
   placeId: string;
   note?: string;
   createdAt?: string;
+  category?: { id: string; name: string };
+  subcategory?: { id: string; name: string } | null;
+  person?: { id: string; name: string };
+  place?: { id: string; name: string } | null;
 }
 
 @Injectable({
