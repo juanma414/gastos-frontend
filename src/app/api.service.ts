@@ -57,7 +57,7 @@ export interface Category {
 export interface Expense {
   id: string;
   expenseDate: string;
-  amount: number;
+  amount: number | string;
   categoryId: string;
   subcategoryId: string;
   personId: string;

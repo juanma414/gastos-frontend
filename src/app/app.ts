@@ -356,7 +356,7 @@ export class App implements OnInit {
             return {
               id: exp.id,
               expenseDate: this.toDateOnly(exp.expenseDate),
-              amount: exp.amount,
+              amount: Number(exp.amount),
               categoryId: exp.categoryId,
               categoryName: exp.category?.name ?? this.categories().find((c) => c.id === exp.categoryId)?.name ?? 'Unknown',
               subcategoryId: exp.subcategoryId,
@@ -417,7 +417,7 @@ export class App implements OnInit {
           const newExpense: ExpenseRecord = {
             id: expense.id,
             expenseDate: this.toDateOnly(expense.expenseDate),
-            amount: expense.amount,
+            amount: Number(expense.amount),
             categoryId: expense.categoryId,
             categoryName: expense.category?.name ?? category.name,
             subcategoryId: expense.subcategoryId,
