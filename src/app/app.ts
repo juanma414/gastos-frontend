@@ -335,6 +335,9 @@ export class App implements OnInit {
   }
 
   protected deactivatePerson(id: string): void {
+    const person = this.people().find((item) => item.id === id);
+    if (!this.confirmDeactivation('persona', person?.name)) return;
+
     this.api.deactivatePerson(id).subscribe({
       next: () => {
         this.people.update((current) => current.map((item) => (item.id === id ? { ...item, isActive: false } : item)));
@@ -366,6 +369,9 @@ export class App implements OnInit {
   }
 
   protected deactivatePlace(id: string): void {
+    const place = this.places().find((item) => item.id === id);
+    if (!this.confirmDeactivation('lugar', place?.name)) return;
+
     this.api.deactivatePlace(id).subscribe({
       next: () => {
         this.places.update((current) => current.map((item) => (item.id === id ? { ...item, isActive: false } : item)));
@@ -405,6 +411,9 @@ export class App implements OnInit {
   }
 
   protected deactivateCategory(id: string): void {
+    const category = this.categories().find((item) => item.id === id);
+    if (!this.confirmDeactivation('categoría', category?.name)) return;
+
     this.api.deactivateCategory(id).subscribe({
       next: () => {
         this.categories.update((current) =>
@@ -454,6 +463,10 @@ export class App implements OnInit {
   }
 
   protected deactivateSubcategory(categoryId: string, subcategoryId: string): void {
+    const category = this.categories().find((item) => item.id === categoryId);
+    const subcategory = category?.subcategories.find((item) => item.id === subcategoryId);
+    if (!this.confirmDeactivation('subcategoría', subcategory?.name)) return;
+
     this.api.deactivateSubcategory(subcategoryId).subscribe({
       next: () => {
         this.categories.update((current) =>
@@ -479,6 +492,11 @@ export class App implements OnInit {
   private persistExpenses(): void {
     // API is now responsible for persistence
     // This method is kept for backward compatibility if needed
+  }
+
+  private confirmDeactivation(entity: string, name?: string): boolean {
+    const label = name ? ` \"${name}\"` : '';
+    return window.confirm(`¿Seguro que querés desactivar ${entity}${label}?`);
   }
 
   protected getSubcategoriesByCategoryId(categoryId: string): Subcategory[] {
