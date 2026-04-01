@@ -219,15 +219,40 @@
     </section>
 
     <section class="panel">
+      <h2>Gasto por categoría (%)</h2>
+      @if (totalsByCategory.length === 0) {
+        <p class="empty">Sin datos para el filtro actual.</p>
+      } @else {
+        <div class="pie-layout">
+          <div class="pie-chart" [style.background]="categoryPieBackground"></div>
+          <ul class="legend-list">
+            @for (row of totalsByCategory; track row.category) {
+              <li>
+                <span class="legend-dot" [style.background]="row.color"></span>
+                <span>{{ row.category }} · {{ row.percentage.toFixed(1) }}%</span>
+                <strong>${{ row.total.toFixed(2) }}</strong>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </section>
+
+    <section class="panel">
       <h2>Gasto por persona</h2>
       @if (totalsByPerson.length === 0) {
         <p class="empty">Sin datos para el filtro actual.</p>
       } @else {
-        <ul class="list compact">
+        <ul class="bar-list">
           @for (row of totalsByPerson; track row.person) {
             <li>
-              <span>{{ row.person }}</span>
-              <strong>${{ row.total.toFixed(2) }}</strong>
+              <div class="bar-head">
+                <span>{{ row.person }}</span>
+                <strong>${{ row.total.toFixed(2) }}</strong>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width.%]="getPersonBarWidth(row.total)"></div>
+              </div>
             </li>
           }
         </ul>

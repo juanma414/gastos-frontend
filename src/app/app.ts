@@ -30,7 +30,15 @@ type ExpenseRecord = {
   note: string;
 };
 
+type CategoryTotalRow = {
+  category: string;
+  total: number;
+  percentage: number;
+  color: string;
+};
+
 const CATALOGS_STORAGE_KEY = 'gastos_catalogos_v1';
+const CHART_COLORS = ['#0e7c7b', '#ff7a45', '#f2c14e', '#4f46e5', '#16a34a', '#d946ef', '#ef4444'];
 
 @Component({
   selector: 'app-root',
@@ -455,6 +463,49 @@ export class App implements OnInit {
       map.set(expense.person, (map.get(expense.person) ?? 0) + expense.amount);
     }
     return Array.from(map.entries()).map(([person, total]) => ({ person, total }));
+  }
+
+  protected get totalsByCategory(): CategoryTotalRow[] {
+    const map = new Map<string, number>();
+    for (const expense of this.filteredExpenses) {
+      map.set(expense.categoryName, (map.get(expense.categoryName) ?? 0) + expense.amount);
+    }
+
+    const total = Array.from(map.values()).reduce((acc, value) => acc + value, 0);
+    return Array.from(map.entries())
+      .map(([category, value], index) => ({
+        category,
+        total: value,
+        percentage: total > 0 ? (value / total) * 100 : 0,
+        color: CHART_COLORS[index % CHART_COLORS.length]
+      }))
+      .sort((a, b) => b.total - a.total);
+  }
+
+  protected get categoryPieBackground(): string {
+    if (this.totalsByCategory.length === 0) {
+      return 'conic-gradient(#d9d3c4 0deg 360deg)';
+    }
+
+    let start = 0;
+    const segments = this.totalsByCategory.map((row) => {
+      const end = start + (row.percentage / 100) * 360;
+      const segment = `${row.color} ${start}deg ${end}deg`;
+      start = end;
+      return segment;
+    });
+
+    return `conic-gradient(${segments.join(', ')})`;
+  }
+
+  protected get maxTotalByPerson(): number {
+    if (this.totalsByPerson.length === 0) return 0;
+    return Math.max(...this.totalsByPerson.map((row) => row.total));
+  }
+
+  protected getPersonBarWidth(total: number): number {
+    if (this.maxTotalByPerson <= 0) return 0;
+    return (total / this.maxTotalByPerson) * 100;
   }
 
   protected get activePeople(): NamedCatalogItem[] {

@@ -91,6 +91,84 @@ h1 {
 	width: auto;
 }
 
+.pie-layout {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0.9rem;
+	align-items: center;
+}
+
+.pie-chart {
+	width: min(240px, 70vw);
+	aspect-ratio: 1;
+	border-radius: 50%;
+	margin: 0 auto;
+	border: 1px solid var(--line);
+	box-shadow: inset 0 0 0 12px #fffdf8;
+}
+
+.legend-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: 0.45rem;
+}
+
+.legend-list li {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	gap: 0.5rem;
+	align-items: center;
+	padding: 0.45rem 0.55rem;
+	background: #fffcf2;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+}
+
+.legend-dot {
+	width: 0.75rem;
+	height: 0.75rem;
+	border-radius: 50%;
+	border: 1px solid color-mix(in srgb, var(--ink) 40%, white 60%);
+}
+
+.bar-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: 0.65rem;
+}
+
+.bar-list li {
+	padding: 0.55rem 0.65rem;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: #fffcf2;
+}
+
+.bar-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 0.5rem;
+	margin-bottom: 0.45rem;
+}
+
+.bar-track {
+	height: 0.7rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--teal-soft) 75%, white 25%);
+	overflow: hidden;
+}
+
+.bar-fill {
+	height: 100%;
+	border-radius: 999px;
+	background: linear-gradient(90deg, var(--teal), #27a39c);
+}
+
 .error-banner {
 	display: flex;
 	justify-content: space-between;
@@ -310,6 +388,10 @@ textarea {
 @media (min-width: 760px) {
 	.grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.pie-layout {
+		grid-template-columns: 260px 1fr;
 	}
 
 	.catalog-grid {
