@@ -43,6 +43,25 @@
       <p class="empty creds">Usuarios iniciales: juan@gastos.local / Juan1234 y ludmi@gastos.local / Ludmi1234</p>
     </section>
   } @else {
+    <section class="panel" [formGroup]="passwordForm">
+      <h2>Cambiar contraseña</h2>
+      <div class="grid">
+        <label>
+          Contraseña actual
+          <input type="password" formControlName="currentPassword" />
+        </label>
+        <label>
+          Nueva contraseña
+          <input type="password" formControlName="newPassword" />
+        </label>
+        <label>
+          Confirmar nueva contraseña
+          <input type="password" formControlName="confirmPassword" />
+        </label>
+      </div>
+      <button type="button" class="save" (click)="changeMyPassword()">Actualizar contraseña</button>
+    </section>
+
     <nav class="tabs" aria-label="Secciones principales">
       <button type="button" [class.active]="activeTab() === 'carga'" (click)="setTab('carga')">Carga diaria</button>
       <button type="button" [class.active]="activeTab() === 'reportes'" (click)="setTab('reportes')">Reportes</button>

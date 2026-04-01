@@ -122,6 +122,16 @@ export class ApiService {
     return this.withRetry(this.http.get<AuthUser>(`${API_URL}/auth/me`, this.authOptions()));
   }
 
+  changePassword(currentPassword: string, newPassword: string): Observable<{ ok: boolean }> {
+    return this.withRetry(
+      this.http.post<{ ok: boolean }>(
+        `${API_URL}/auth/change-password`,
+        { currentPassword, newPassword },
+        this.authOptions()
+      )
+    );
+  }
+
   getUsers(): Observable<AuthUser[]> {
     return this.withRetry(this.http.get<AuthUser[]>(`${API_URL}/users`, this.authOptions()));
   }

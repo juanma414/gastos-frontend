@@ -128,6 +128,12 @@ export class App implements OnInit {
     role: ['MEMBER' as UserRole, [Validators.required]]
   });
 
+  protected readonly passwordForm = this.fb.group({
+    currentPassword: ['', [Validators.required, Validators.minLength(6)]],
+    newPassword: ['', [Validators.required, Validators.minLength(6)]],
+    confirmPassword: ['', [Validators.required, Validators.minLength(6)]]
+  });
+
   constructor() {
     this.ensureFormDefaults();
 
@@ -208,6 +214,33 @@ export class App implements OnInit {
     this.users.set([]);
     this.expenses.set([]);
     this.errorMessage.set('');
+    this.passwordForm.reset();
+  }
+
+  protected changeMyPassword(): void {
+    if (this.passwordForm.invalid) {
+      this.passwordForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.passwordForm.getRawValue();
+    if (!value.currentPassword || !value.newPassword || !value.confirmPassword) return;
+
+    if (value.newPassword !== value.confirmPassword) {
+      this.errorMessage.set('La nueva contraseña y su confirmación no coinciden');
+      return;
+    }
+
+    this.api.changePassword(value.currentPassword, value.newPassword).subscribe({
+      next: () => {
+        this.errorMessage.set('');
+        this.passwordForm.reset();
+        window.alert('Contraseña actualizada correctamente');
+      },
+      error: () => {
+        this.errorMessage.set('No se pudo actualizar la contraseña. Revisá tu contraseña actual.');
+      }
+    });
   }
 
   private loadUsers(): void {
