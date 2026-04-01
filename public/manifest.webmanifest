@@ -1,6 +1,6 @@
 {
-  "name": "gastos-frontend",
-  "short_name": "gastos-frontend",
+  "name": "Registro de Gastos",
+  "short_name": "Registro de Gastos",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",
