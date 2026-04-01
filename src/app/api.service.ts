@@ -254,4 +254,11 @@ export class ApiService {
   createExpense(expense: Omit<Expense, 'id' | 'createdAt'>): Observable<Expense> {
     return this.withRetry(this.http.post<Expense>(`${API_URL}/expenses`, expense, this.authOptions()));
   }
+
+  updateExpense(
+    id: string,
+    expense: Partial<Omit<Expense, 'id' | 'createdAt'>>
+  ): Observable<Expense> {
+    return this.withRetry(this.http.patch<Expense>(`${API_URL}/expenses/${id}`, expense, this.authOptions()));
+  }
 }

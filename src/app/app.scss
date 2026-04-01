@@ -169,6 +169,12 @@ h1 {
 	background: linear-gradient(90deg, var(--teal), #27a39c);
 }
 
+.item-actions {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 0.2rem;
+}
+
 .error-banner {
 	display: flex;
 	justify-content: space-between;

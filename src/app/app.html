@@ -77,7 +77,7 @@
       </section>
     } @else if (activeTab() === 'carga') {
     <section class="panel" [formGroup]="expenseForm">
-      <h2>Nuevo gasto</h2>
+      <h2>{{ isEditingExpense ? 'Editar gasto' : 'Nuevo gasto' }}</h2>
 
       <div class="grid">
         <label>
@@ -132,7 +132,14 @@
         <textarea rows="2" formControlName="note" placeholder="Opcional"></textarea>
       </label>
 
-      <button class="save" type="button" (click)="saveExpense()">Guardar gasto</button>
+      <div class="profile-actions">
+        @if (isEditingExpense) {
+          <button type="button" class="soft" (click)="cancelEditExpense()">Cancelar edición</button>
+        }
+        <button class="save profile-save" type="button" (click)="saveExpense()">
+          {{ isEditingExpense ? 'Guardar cambios' : 'Guardar gasto' }}
+        </button>
+      </div>
     </section>
 
     <section class="panel">
@@ -146,6 +153,12 @@
               <strong>${{ expense.amount.toFixed(2) }}</strong>
               <span>{{ expense.expenseDate }} · {{ expense.categoryName }} / {{ expense.subcategoryName }}</span>
               <small>{{ expense.person }} · {{ expense.place }}</small>
+              @if (expense.note) {
+                <small><em>Nota: {{ expense.note }}</em></small>
+              }
+              <div class="item-actions">
+                <button type="button" class="soft" (click)="startEditExpense(expense.id)">Editar</button>
+              </div>
             </li>
           }
         </ul>

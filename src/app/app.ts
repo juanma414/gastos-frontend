@@ -56,6 +56,7 @@ export class App implements OnInit {
   protected readonly errorMessage = signal('');
   protected readonly currentUser = signal<AuthUser | null>(null);
   protected readonly users = signal<AuthUser[]>([]);
+  protected readonly editingExpenseId = signal<string | null>(null);
 
   protected readonly categories = signal<Category[]>([
     {
@@ -399,17 +400,20 @@ export class App implements OnInit {
       return;
     }
 
-    this.api
-      .createExpense({
-        expenseDate: value.expenseDate,
-        amount: Number(value.amount),
-        categoryId: category.id,
-        subcategoryId: subcategory.id,
-        personId: value.person,
-        placeId: value.place,
-        note: value.note ?? ''
-      })
-      .subscribe({
+    const editingId = this.editingExpenseId();
+    const payload = {
+      expenseDate: value.expenseDate,
+      amount: Number(value.amount),
+      categoryId: category.id,
+      subcategoryId: subcategory.id,
+      personId: value.person,
+      placeId: value.place,
+      note: value.note ?? ''
+    };
+
+    const request = editingId ? this.api.updateExpense(editingId, payload) : this.api.createExpense(payload);
+
+    request.subscribe({
         next: (expense) => {
           const person = this.people().find((item) => item.id === expense.personId);
           const place = this.places().find((item) => item.id === expense.placeId);
@@ -427,8 +431,15 @@ export class App implements OnInit {
             note: expense.note ?? ''
           };
 
-          this.expenses.update((current) => [newExpense, ...current]);
+          this.expenses.update((current) => {
+            if (!editingId) {
+              return [newExpense, ...current];
+            }
 
+            return current.map((item) => (item.id === editingId ? newExpense : item));
+          });
+
+          this.editingExpenseId.set(null);
           this.expenseForm.patchValue({
             amount: null,
             note: ''
@@ -439,6 +450,42 @@ export class App implements OnInit {
           this.errorMessage.set('Error al guardar el gasto');
         }
       });
+  }
+
+  protected startEditExpense(expenseId: string): void {
+    const expense = this.expenses().find((item) => item.id === expenseId);
+    if (!expense) return;
+
+    const personId = this.people().find((item) => item.name === expense.person)?.id ?? '';
+    const placeId = this.places().find((item) => item.name === expense.place)?.id ?? '';
+
+    this.editingExpenseId.set(expense.id);
+    this.activeTab.set('carga');
+    this.expenseForm.patchValue(
+      {
+        expenseDate: expense.expenseDate,
+        amount: expense.amount,
+        categoryId: expense.categoryId,
+        subcategoryId: expense.subcategoryId,
+        person: personId,
+        place: placeId,
+        note: expense.note
+      },
+      { emitEvent: false }
+    );
+  }
+
+  protected cancelEditExpense(): void {
+    this.editingExpenseId.set(null);
+    this.expenseForm.patchValue({
+      amount: null,
+      note: ''
+    });
+    this.ensureFormDefaults();
+  }
+
+  protected get isEditingExpense(): boolean {
+    return this.editingExpenseId() !== null;
   }
 
   protected get filteredExpenses(): ExpenseRecord[] {
