@@ -175,6 +175,61 @@ h1 {
 	margin-top: 0.2rem;
 }
 
+.report-records-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.8rem;
+	flex-wrap: wrap;
+	margin-bottom: 0.65rem;
+}
+
+.report-records-head h2 {
+	margin: 0;
+}
+
+.export-btn {
+	white-space: nowrap;
+}
+
+.report-table-wrap {
+	overflow-x: auto;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: #fffcf5;
+}
+
+.report-table {
+	width: 100%;
+	border-collapse: collapse;
+	min-width: 760px;
+}
+
+.report-table th,
+.report-table td {
+	padding: 0.55rem 0.65rem;
+	text-align: left;
+	border-bottom: 1px solid var(--line);
+	font-size: 0.9rem;
+}
+
+.report-table th {
+	position: sticky;
+	top: 0;
+	background: #f5efe2;
+	font-size: 0.82rem;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+.report-table tbody tr:nth-child(even) {
+	background: #fff9ea;
+}
+
+.report-table tbody tr:last-child td {
+	border-bottom: 0;
+}
+
 .error-banner {
 	display: flex;
 	justify-content: space-between;

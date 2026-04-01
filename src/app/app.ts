@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiService, AuthUser, Category, UserRole } from './api.service';
+import * as XLSX from 'xlsx';
 
 type Tab = 'carga' | 'reportes' | 'catalogos' | 'perfil';
 
@@ -210,8 +211,13 @@ export class App implements OnInit {
           this.loadUsers();
         }
       },
-      error: () => {
-        this.errorMessage.set('Email o contraseña inválidos');
+      error: (error) => {
+        const status = Number(error?.status ?? 0);
+        if (status === 401) {
+          this.errorMessage.set('Usuario/email o contraseña inválidos');
+        } else {
+          this.errorMessage.set('No se pudo conectar con la API local. Verificá backend y DATABASE_URL.');
+        }
         this.isLoading.set(false);
       }
     });
@@ -501,8 +507,43 @@ export class App implements OnInit {
     });
   }
 
+  protected get filteredExpensesByDate(): ExpenseRecord[] {
+    return [...this.filteredExpenses].sort((a, b) => {
+      const byDate = a.expenseDate.localeCompare(b.expenseDate);
+      if (byDate !== 0) return byDate;
+      return a.id.localeCompare(b.id);
+    });
+  }
+
   protected get reportTotal(): number {
     return this.filteredExpenses.reduce((acc, item) => acc + item.amount, 0);
+  }
+
+  protected exportReportToSpreadsheet(): void {
+    const rows = this.filteredExpensesByDate;
+    if (rows.length === 0) {
+      window.alert('No hay datos para exportar con los filtros actuales.');
+      return;
+    }
+
+    const headers = ['Fecha', 'Importe', 'Categoria', 'Subcategoria', 'Lugar', 'Nota', 'Persona'];
+    const sheetRows = rows.map((item) => [
+      item.expenseDate,
+      item.amount.toFixed(2),
+      item.categoryName,
+      item.subcategoryName,
+      item.place,
+      item.note,
+      item.person
+    ]);
+
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...sheetRows]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte');
+
+    const from = this.reportForm.controls.from.value || 'inicio';
+    const to = this.reportForm.controls.to.value || 'hoy';
+    XLSX.writeFile(workbook, `reporte-gastos-${from}-a-${to}.xlsx`);
   }
 
   protected get totalsByPerson(): Array<{ person: string; total: number }> {

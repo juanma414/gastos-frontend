@@ -34,7 +34,7 @@
       <div class="grid">
         <label>
           Usuario o email
-          <input type="text" formControlName="identifier" placeholder="juan o juan@gastos.local" />
+          <input type="text" formControlName="identifier" placeholder="Ludmi o ludmila.cardinale@gmail.com" />
         </label>
 
         <label>
@@ -227,7 +227,7 @@
       </article>
       <article>
         <h3>Registros</h3>
-        <p>{{ filteredExpenses.length }}</p>
+        <p>{{ filteredExpensesByDate.length }}</p>
       </article>
     </section>
 
@@ -269,6 +269,45 @@
             </li>
           }
         </ul>
+      }
+    </section>
+
+    <section class="panel">
+      <div class="report-records-head">
+        <h2>Registros filtrados</h2>
+        <button type="button" class="soft export-btn" (click)="exportReportToSpreadsheet()">Exportar planilla (.xlsx)</button>
+      </div>
+      @if (filteredExpensesByDate.length === 0) {
+        <p class="empty">Sin registros para el filtro actual.</p>
+      } @else {
+        <div class="report-table-wrap">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Importe</th>
+                <th>Categoria</th>
+                <th>Subcategoria</th>
+                <th>Lugar</th>
+                <th>Nota</th>
+                <th>Persona</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (expense of filteredExpensesByDate; track expense.id) {
+                <tr>
+                  <td>{{ expense.expenseDate }}</td>
+                  <td>${{ expense.amount.toFixed(2) }}</td>
+                  <td>{{ expense.categoryName }}</td>
+                  <td>{{ expense.subcategoryName }}</td>
+                  <td>{{ expense.place }}</td>
+                  <td>{{ expense.note || '-' }}</td>
+                  <td>{{ expense.person }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       }
     </section>
     } @else {
