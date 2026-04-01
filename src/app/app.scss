@@ -45,6 +45,25 @@ h1 {
 	color: color-mix(in srgb, var(--ink) 80%, white 20%);
 }
 
+.session-bar {
+	margin-top: 0.75rem;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 0.7rem;
+	flex-wrap: wrap;
+}
+
+.login-panel {
+	max-width: 620px;
+	margin: 1rem auto 0;
+}
+
+.creds {
+	margin-top: 0.7rem;
+	font-size: 0.82rem;
+}
+
 .error-banner {
 	display: flex;
 	justify-content: space-between;

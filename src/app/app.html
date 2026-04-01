@@ -2,7 +2,14 @@
   <header class="hero">
     <p class="eyebrow">Pareja · Finanzas Cotidianas</p>
     <h1>{{ title() }}</h1>
-    <p class="sub">Carga rapida hoy, analisis claro despues. Funciona sin internet y guarda localmente.</p>
+    <p class="sub">Carga rapida hoy, analisis claro despues. Funciona online y con cuentas de usuario.</p>
+
+    @if (isAuthenticated) {
+      <div class="session-bar">
+        <span>Sesión: <strong>{{ currentUser()?.name }}</strong> ({{ currentUser()?.role }})</span>
+        <button type="button" class="soft" (click)="logout()">Cerrar sesión</button>
+      </div>
+    }
   </header>
 
   @if (errorMessage()) {
@@ -18,13 +25,31 @@
     </div>
   }
 
-  <nav class="tabs" aria-label="Secciones principales">
-    <button type="button" [class.active]="activeTab() === 'carga'" (click)="setTab('carga')">Carga diaria</button>
-    <button type="button" [class.active]="activeTab() === 'reportes'" (click)="setTab('reportes')">Reportes</button>
-    <button type="button" [class.active]="activeTab() === 'catalogos'" (click)="setTab('catalogos')">Catalogos</button>
-  </nav>
+  @if (!isAuthenticated) {
+    <section class="panel login-panel" [formGroup]="loginForm">
+      <h2>Iniciar sesión</h2>
+      <div class="grid">
+        <label>
+          Email
+          <input type="email" formControlName="email" placeholder="juan@gastos.local" />
+        </label>
 
-  @if (activeTab() === 'carga') {
+        <label>
+          Contraseña
+          <input type="password" formControlName="password" placeholder="******" />
+        </label>
+      </div>
+      <button class="save" type="button" (click)="login()">Entrar</button>
+      <p class="empty creds">Usuarios iniciales: juan@gastos.local / Juan1234 y ludmi@gastos.local / Ludmi1234</p>
+    </section>
+  } @else {
+    <nav class="tabs" aria-label="Secciones principales">
+      <button type="button" [class.active]="activeTab() === 'carga'" (click)="setTab('carga')">Carga diaria</button>
+      <button type="button" [class.active]="activeTab() === 'reportes'" (click)="setTab('reportes')">Reportes</button>
+      <button type="button" [class.active]="activeTab() === 'catalogos'" (click)="setTab('catalogos')">Catalogos</button>
+    </nav>
+
+    @if (activeTab() === 'carga') {
     <section class="panel" [formGroup]="expenseForm">
       <h2>Nuevo gasto</h2>
 
@@ -182,7 +207,7 @@
         </ul>
       }
     </section>
-  } @else {
+    } @else {
     <section class="panel" [formGroup]="catalogForm">
       <h2>ABM de Catalogos</h2>
       <div class="catalog-grid">
@@ -266,7 +291,34 @@
             </ul>
           }
         </article>
+
+        @if (isAdmin) {
+          <article class="catalog-card" [formGroup]="userForm">
+            <h3>Usuarios (admin)</h3>
+            <div class="inline-form stacked">
+              <input type="text" formControlName="name" placeholder="Nombre" />
+              <input type="email" formControlName="email" placeholder="Email" />
+              <input type="password" formControlName="password" placeholder="Contraseña" />
+              <select formControlName="role">
+                <option value="MEMBER">MEMBER</option>
+                <option value="ADMIN">ADMIN</option>
+              </select>
+              <button type="button" (click)="createUser()">Crear usuario</button>
+            </div>
+            <ul class="list compact">
+              @for (user of users(); track user.id) {
+                @if (user.isActive) {
+                  <li>
+                    <span>{{ user.name }} · {{ user.email }} · {{ user.role }}</span>
+                    <button type="button" class="soft" (click)="deactivateUser(user.id)">Desactivar</button>
+                  </li>
+                }
+              }
+            </ul>
+          </article>
+        }
       </div>
     </section>
+    }
   }
 </main>

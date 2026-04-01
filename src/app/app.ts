@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ApiService, Person, Place, Category, Subcategory as ApiSubcategory } from './api.service';
+import { ApiService, AuthUser, Category, UserRole } from './api.service';
 
 type Tab = 'carga' | 'reportes' | 'catalogos';
 
@@ -30,7 +30,6 @@ type ExpenseRecord = {
   note: string;
 };
 
-const STORAGE_KEY = 'gastos_local_v1';
 const CATALOGS_STORAGE_KEY = 'gastos_catalogos_v1';
 
 @Component({
@@ -47,6 +46,8 @@ export class App implements OnInit {
   protected readonly activeTab = signal<Tab>('carga');
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal('');
+  protected readonly currentUser = signal<AuthUser | null>(null);
+  protected readonly users = signal<AuthUser[]>([]);
 
   protected readonly categories = signal<Category[]>([
     {
@@ -115,6 +116,18 @@ export class App implements OnInit {
     place: ['']
   });
 
+  protected readonly loginForm = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]]
+  });
+
+  protected readonly userForm = this.fb.group({
+    name: ['', [Validators.required]],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
+    role: ['MEMBER' as UserRole, [Validators.required]]
+  });
+
   constructor() {
     this.ensureFormDefaults();
 
@@ -133,7 +146,112 @@ export class App implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadData();
+    if (!this.api.hasToken()) {
+      return;
+    }
+
+    this.api.me().subscribe({
+      next: (user) => {
+        this.currentUser.set(user);
+        this.loadData();
+        if (user.role === 'ADMIN') {
+          this.loadUsers();
+        }
+      },
+      error: () => {
+        this.api.clearToken();
+        this.currentUser.set(null);
+      }
+    });
+  }
+
+  protected get isAuthenticated(): boolean {
+    return this.currentUser() !== null;
+  }
+
+  protected get isAdmin(): boolean {
+    return this.currentUser()?.role === 'ADMIN';
+  }
+
+  protected login(): void {
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.loginForm.getRawValue();
+    if (!value.email || !value.password) return;
+
+    this.errorMessage.set('');
+    this.isLoading.set(true);
+
+    this.api.login(value.email, value.password).subscribe({
+      next: (response) => {
+        this.api.setToken(response.token);
+        this.currentUser.set(response.user);
+        this.loginForm.patchValue({ password: '' });
+        this.loadData();
+        if (response.user.role === 'ADMIN') {
+          this.loadUsers();
+        }
+      },
+      error: () => {
+        this.errorMessage.set('Email o contraseña inválidos');
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  protected logout(): void {
+    this.api.clearToken();
+    this.currentUser.set(null);
+    this.users.set([]);
+    this.expenses.set([]);
+    this.errorMessage.set('');
+  }
+
+  private loadUsers(): void {
+    this.api.getUsers().subscribe({
+      next: (users) => this.users.set(users),
+      error: () => this.errorMessage.set('No se pudieron cargar los usuarios')
+    });
+  }
+
+  protected createUser(): void {
+    if (!this.isAdmin) return;
+    if (this.userForm.invalid) {
+      this.userForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.userForm.getRawValue();
+    if (!value.name || !value.email || !value.password || !value.role) return;
+
+    this.api.createUser({
+      name: value.name.trim(),
+      email: value.email.trim().toLowerCase(),
+      password: value.password,
+      role: value.role
+    }).subscribe({
+      next: (user) => {
+        this.users.update((current) => [...current, user]);
+        this.userForm.patchValue({ name: '', email: '', password: '', role: 'MEMBER' });
+      },
+      error: () => this.errorMessage.set('No se pudo crear el usuario')
+    });
+  }
+
+  protected deactivateUser(id: string): void {
+    if (!this.isAdmin) return;
+    const user = this.users().find((item) => item.id === id);
+    if (!this.confirmDeactivation('usuario', user?.name)) return;
+
+    this.api.deactivateUser(id).subscribe({
+      next: (updated) => {
+        this.users.update((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      },
+      error: () => this.errorMessage.set('No se pudo desactivar el usuario')
+    });
   }
 
   private loadData(): void {
@@ -246,6 +364,9 @@ export class App implements OnInit {
       })
       .subscribe({
         next: (expense) => {
+          const person = this.people().find((item) => item.id === expense.personId);
+          const place = this.places().find((item) => item.id === expense.placeId);
+
           const newExpense: ExpenseRecord = {
             id: expense.id,
             expenseDate: expense.expenseDate,
@@ -254,8 +375,8 @@ export class App implements OnInit {
             categoryName: category.name,
             subcategoryId: expense.subcategoryId,
             subcategoryName: subcategory.name,
-            place: expense.placeId,
-            person: expense.personId,
+            place: place?.name ?? 'Unknown',
+            person: person?.name ?? 'Unknown',
             note: expense.note ?? ''
           };
 
