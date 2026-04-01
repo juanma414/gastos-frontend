@@ -117,7 +117,7 @@ export class App implements OnInit {
   });
 
   protected readonly loginForm = this.fb.group({
-    email: ['', [Validators.required, Validators.email]],
+    identifier: ['', [Validators.required]],
     password: ['', [Validators.required, Validators.minLength(6)]]
   });
 
@@ -186,12 +186,12 @@ export class App implements OnInit {
     }
 
     const value = this.loginForm.getRawValue();
-    if (!value.email || !value.password) return;
+    if (!value.identifier || !value.password) return;
 
     this.errorMessage.set('');
     this.isLoading.set(true);
 
-    this.api.login(value.email, value.password).subscribe({
+    this.api.login(value.identifier, value.password).subscribe({
       next: (response) => {
         this.api.setToken(response.token);
         this.currentUser.set(response.user);

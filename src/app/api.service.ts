@@ -114,8 +114,10 @@ export class ApiService {
     };
   }
 
-  login(email: string, password: string): Observable<LoginResponse> {
-    return this.withRetry(this.http.post<LoginResponse>(`${API_URL}/auth/login`, { email, password }));
+  login(identifier: string, password: string): Observable<LoginResponse> {
+    return this.withRetry(
+      this.http.post<LoginResponse>(`${API_URL}/auth/login`, { identifier, password })
+    );
   }
 
   me(): Observable<AuthUser> {
