@@ -54,7 +54,12 @@ export class App implements OnInit {
   protected readonly title = signal('Registro de Gastos');
   protected readonly activeTab = signal<Tab>('carga');
   protected readonly isLoading = signal(false);
+  protected readonly isSavingExpense = signal(false);
+  protected readonly isSubmittingCatalog = signal(false);
+  protected readonly isCreatingUser = signal(false);
+  protected readonly deactivatingKey = signal<string | null>(null);
   protected readonly errorMessage = signal('');
+  protected readonly successMessage = signal('');
   protected readonly currentUser = signal<AuthUser | null>(null);
   protected readonly users = signal<AuthUser[]>([]);
   protected readonly editingExpenseId = signal<string | null>(null);
@@ -272,6 +277,7 @@ export class App implements OnInit {
 
   protected createUser(): void {
     if (!this.isAdmin) return;
+    if (this.isCreatingUser()) return;
     if (this.userForm.invalid) {
       this.userForm.markAllAsTouched();
       return;
@@ -279,6 +285,8 @@ export class App implements OnInit {
 
     const value = this.userForm.getRawValue();
     if (!value.name || !value.email || !value.password || !value.role) return;
+
+    this.isCreatingUser.set(true);
 
     this.api.createUser({
       name: value.name.trim(),
@@ -289,21 +297,37 @@ export class App implements OnInit {
       next: (user) => {
         this.users.update((current) => [...current, user]);
         this.userForm.patchValue({ name: '', email: '', password: '', role: 'MEMBER' });
+        this.isCreatingUser.set(false);
       },
-      error: () => this.errorMessage.set('No se pudo crear el usuario')
+      error: () => {
+        this.errorMessage.set('No se pudo crear el usuario');
+        this.isCreatingUser.set(false);
+      }
     });
   }
 
   protected deactivateUser(id: string): void {
     if (!this.isAdmin) return;
+    if (this.deactivatingKey()) return;
+
+    const key = `user:${id}`;
     const user = this.users().find((item) => item.id === id);
     if (!this.confirmDeactivation('usuario', user?.name)) return;
+
+    this.deactivatingKey.set(key);
+    this.errorMessage.set('');
+    this.successMessage.set('');
 
     this.api.deactivateUser(id).subscribe({
       next: (updated) => {
         this.users.update((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+        this.deactivatingKey.set(null);
+        this.successMessage.set('Usuario desactivado correctamente');
       },
-      error: () => this.errorMessage.set('No se pudo desactivar el usuario')
+      error: () => {
+        this.errorMessage.set('No se pudo desactivar el usuario');
+        this.deactivatingKey.set(null);
+      }
     });
   }
 
@@ -393,6 +417,10 @@ export class App implements OnInit {
   }
 
   protected saveExpense(): void {
+    if (this.isSavingExpense()) {
+      return;
+    }
+
     if (this.expenseForm.invalid) {
       this.expenseForm.markAllAsTouched();
       return;
@@ -418,6 +446,10 @@ export class App implements OnInit {
     };
 
     const request = editingId ? this.api.updateExpense(editingId, payload) : this.api.createExpense(payload);
+
+    this.isSavingExpense.set(true);
+    this.errorMessage.set('');
+    this.successMessage.set('');
 
     request.subscribe({
         next: (expense) => {
@@ -450,10 +482,15 @@ export class App implements OnInit {
             amount: null,
             note: ''
           });
+
+          this.successMessage.set(editingId ? 'Gasto actualizado con éxito' : 'Carga exitosa');
+          this.isSavingExpense.set(false);
         },
         error: (err) => {
           console.error('Error saving expense:', err);
+          this.successMessage.set('');
           this.errorMessage.set('Error al guardar el gasto');
+          this.isSavingExpense.set(false);
         }
       });
   }
@@ -616,77 +653,113 @@ export class App implements OnInit {
   }
 
   protected addPerson(): void {
+    if (this.isSubmittingCatalog()) return;
+
     const name = this.catalogForm.controls.personName.value?.trim();
     if (!name) return;
     if (this.people().some((item) => item.name.toLowerCase() === name.toLowerCase() && item.isActive)) return;
+
+    this.isSubmittingCatalog.set(true);
 
     this.api.createPerson(name).subscribe({
       next: (person) => {
         this.people.update((current) => [...current, { id: person.id, name: person.name, isActive: person.isActive }]);
         this.catalogForm.patchValue({ personName: '' });
         this.ensureFormDefaults();
+        this.isSubmittingCatalog.set(false);
       },
       error: (err) => {
         console.error('Error adding person:', err);
         this.errorMessage.set('Error al agregar persona');
+        this.isSubmittingCatalog.set(false);
       }
     });
   }
 
   protected deactivatePerson(id: string): void {
+    if (this.deactivatingKey()) return;
+
+    const key = `person:${id}`;
     const person = this.people().find((item) => item.id === id);
     if (!this.confirmDeactivation('persona', person?.name)) return;
+
+    this.deactivatingKey.set(key);
+    this.errorMessage.set('');
+    this.successMessage.set('');
 
     this.api.deactivatePerson(id).subscribe({
       next: () => {
         this.people.update((current) => current.map((item) => (item.id === id ? { ...item, isActive: false } : item)));
         this.ensureFormDefaults();
+        this.deactivatingKey.set(null);
+        this.successMessage.set('Persona desactivada correctamente');
       },
       error: (err) => {
         console.error('Error deactivating person:', err);
         this.errorMessage.set('Error al desactivar persona');
+        this.deactivatingKey.set(null);
       }
     });
   }
 
   protected addPlace(): void {
+    if (this.isSubmittingCatalog()) return;
+
     const name = this.catalogForm.controls.placeName.value?.trim();
     if (!name) return;
     if (this.places().some((item) => item.name.toLowerCase() === name.toLowerCase() && item.isActive)) return;
+
+    this.isSubmittingCatalog.set(true);
 
     this.api.createPlace(name).subscribe({
       next: (place) => {
         this.places.update((current) => [...current, { id: place.id, name: place.name, isActive: place.isActive }]);
         this.catalogForm.patchValue({ placeName: '' });
         this.ensureFormDefaults();
+        this.isSubmittingCatalog.set(false);
       },
       error: (err) => {
         console.error('Error adding place:', err);
         this.errorMessage.set('Error al agregar lugar');
+        this.isSubmittingCatalog.set(false);
       }
     });
   }
 
   protected deactivatePlace(id: string): void {
+    if (this.deactivatingKey()) return;
+
+    const key = `place:${id}`;
     const place = this.places().find((item) => item.id === id);
     if (!this.confirmDeactivation('lugar', place?.name)) return;
+
+    this.deactivatingKey.set(key);
+    this.errorMessage.set('');
+    this.successMessage.set('');
 
     this.api.deactivatePlace(id).subscribe({
       next: () => {
         this.places.update((current) => current.map((item) => (item.id === id ? { ...item, isActive: false } : item)));
         this.ensureFormDefaults();
+        this.deactivatingKey.set(null);
+        this.successMessage.set('Lugar desactivado correctamente');
       },
       error: (err) => {
         console.error('Error deactivating place:', err);
         this.errorMessage.set('Error al desactivar lugar');
+        this.deactivatingKey.set(null);
       }
     });
   }
 
   protected addCategory(): void {
+    if (this.isSubmittingCatalog()) return;
+
     const name = this.catalogForm.controls.categoryName.value?.trim();
     if (!name) return;
     if (this.categories().some((item) => item.name.toLowerCase() === name.toLowerCase() && item.isActive)) return;
+
+    this.isSubmittingCatalog.set(true);
 
     this.api.createCategory(name).subscribe({
       next: (category) => {
@@ -701,17 +774,26 @@ export class App implements OnInit {
         ]);
         this.catalogForm.patchValue({ categoryName: '' });
         this.ensureFormDefaults();
+        this.isSubmittingCatalog.set(false);
       },
       error: (err) => {
         console.error('Error adding category:', err);
         this.errorMessage.set('Error al agregar categoría');
+        this.isSubmittingCatalog.set(false);
       }
     });
   }
 
   protected deactivateCategory(id: string): void {
+    if (this.deactivatingKey()) return;
+
+    const key = `category:${id}`;
     const category = this.categories().find((item) => item.id === id);
     if (!this.confirmDeactivation('categoría', category?.name)) return;
+
+    this.deactivatingKey.set(key);
+    this.errorMessage.set('');
+    this.successMessage.set('');
 
     this.api.deactivateCategory(id).subscribe({
       next: () => {
@@ -727,18 +809,25 @@ export class App implements OnInit {
           )
         );
         this.ensureFormDefaults();
+        this.deactivatingKey.set(null);
+        this.successMessage.set('Categoría desactivada correctamente');
       },
       error: (err) => {
         console.error('Error deactivating category:', err);
         this.errorMessage.set('Error al desactivar categoría');
+        this.deactivatingKey.set(null);
       }
     });
   }
 
   protected addSubcategory(): void {
+    if (this.isSubmittingCatalog()) return;
+
     const categoryId = this.catalogForm.controls.subcategoryCategoryId.value?.trim();
     const name = this.catalogForm.controls.subcategoryName.value?.trim();
     if (!categoryId || !name) return;
+
+    this.isSubmittingCatalog.set(true);
 
     this.api.createSubcategory(categoryId, name).subscribe({
       next: (subcategory) => {
@@ -753,18 +842,27 @@ export class App implements OnInit {
         );
         this.catalogForm.patchValue({ subcategoryName: '' });
         this.ensureFormDefaults();
+        this.isSubmittingCatalog.set(false);
       },
       error: (err) => {
         console.error('Error adding subcategory:', err);
         this.errorMessage.set('Error al agregar subcategoría');
+        this.isSubmittingCatalog.set(false);
       }
     });
   }
 
   protected deactivateSubcategory(categoryId: string, subcategoryId: string): void {
+    if (this.deactivatingKey()) return;
+
+    const key = `subcategory:${categoryId}:${subcategoryId}`;
     const category = this.categories().find((item) => item.id === categoryId);
     const subcategory = category?.subcategories.find((item) => item.id === subcategoryId);
     if (!this.confirmDeactivation('subcategoría', subcategory?.name)) return;
+
+    this.deactivatingKey.set(key);
+    this.errorMessage.set('');
+    this.successMessage.set('');
 
     this.api.deactivateSubcategory(subcategoryId).subscribe({
       next: () => {
@@ -780,10 +878,13 @@ export class App implements OnInit {
           })
         );
         this.ensureFormDefaults();
+        this.deactivatingKey.set(null);
+        this.successMessage.set('Subcategoría desactivada correctamente');
       },
       error: (err) => {
         console.error('Error deactivating subcategory:', err);
         this.errorMessage.set('Error al desactivar subcategoría');
+        this.deactivatingKey.set(null);
       }
     });
   }

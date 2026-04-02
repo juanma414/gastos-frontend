@@ -22,6 +22,13 @@
     </div>
   }
 
+  @if (successMessage()) {
+    <div class="success-banner">
+      {{ successMessage() }}
+      <button type="button" (click)="successMessage.set('')">✕</button>
+    </div>
+  }
+
   @if (isLoading()) {
     <div class="loading-banner">
       Cargando datos...
@@ -136,8 +143,8 @@
         @if (isEditingExpense) {
           <button type="button" class="soft" (click)="cancelEditExpense()">Cancelar edición</button>
         }
-        <button class="save profile-save" type="button" (click)="saveExpense()">
-          {{ isEditingExpense ? 'Guardar cambios' : 'Guardar gasto' }}
+        <button class="save profile-save" type="button" (click)="saveExpense()" [disabled]="isSavingExpense()">
+          {{ isSavingExpense() ? 'Guardando...' : (isEditingExpense ? 'Guardar cambios' : 'Guardar gasto') }}
         </button>
       </div>
     </section>
@@ -318,13 +325,22 @@
           <h3>Personas</h3>
           <div class="inline-form">
             <input type="text" formControlName="personName" placeholder="Nueva persona" />
-            <button type="button" (click)="addPerson()">Agregar</button>
+            <button type="button" (click)="addPerson()" [disabled]="isSubmittingCatalog()">
+              {{ isSubmittingCatalog() ? 'Agregando...' : 'Agregar' }}
+            </button>
           </div>
           <ul class="list compact">
             @for (person of activePeople; track person.id) {
               <li>
                 <span>{{ person.name }}</span>
-                <button type="button" class="soft" (click)="deactivatePerson(person.id)">Desactivar</button>
+                <button
+                  type="button"
+                  class="soft"
+                  (click)="deactivatePerson(person.id)"
+                  [disabled]="!!deactivatingKey()"
+                >
+                  {{ deactivatingKey() === ('person:' + person.id) ? 'Desactivando...' : 'Desactivar' }}
+                </button>
               </li>
             }
           </ul>
@@ -334,13 +350,22 @@
           <h3>Lugares</h3>
           <div class="inline-form">
             <input type="text" formControlName="placeName" placeholder="Nuevo lugar" />
-            <button type="button" (click)="addPlace()">Agregar</button>
+            <button type="button" (click)="addPlace()" [disabled]="isSubmittingCatalog()">
+              {{ isSubmittingCatalog() ? 'Agregando...' : 'Agregar' }}
+            </button>
           </div>
           <ul class="list compact">
             @for (place of activePlaces; track place.id) {
               <li>
                 <span>{{ place.name }}</span>
-                <button type="button" class="soft" (click)="deactivatePlace(place.id)">Desactivar</button>
+                <button
+                  type="button"
+                  class="soft"
+                  (click)="deactivatePlace(place.id)"
+                  [disabled]="!!deactivatingKey()"
+                >
+                  {{ deactivatingKey() === ('place:' + place.id) ? 'Desactivando...' : 'Desactivar' }}
+                </button>
               </li>
             }
           </ul>
@@ -350,13 +375,22 @@
           <h3>Categorias</h3>
           <div class="inline-form">
             <input type="text" formControlName="categoryName" placeholder="Nueva categoria" />
-            <button type="button" (click)="addCategory()">Agregar</button>
+            <button type="button" (click)="addCategory()" [disabled]="isSubmittingCatalog()">
+              {{ isSubmittingCatalog() ? 'Agregando...' : 'Agregar' }}
+            </button>
           </div>
           <ul class="list compact">
             @for (category of activeCategories; track category.id) {
               <li>
                 <span>{{ category.name }}</span>
-                <button type="button" class="soft" (click)="deactivateCategory(category.id)">Desactivar</button>
+                <button
+                  type="button"
+                  class="soft"
+                  (click)="deactivateCategory(category.id)"
+                  [disabled]="!!deactivatingKey()"
+                >
+                  {{ deactivatingKey() === ('category:' + category.id) ? 'Desactivando...' : 'Desactivar' }}
+                </button>
               </li>
             }
           </ul>
@@ -371,7 +405,9 @@
               }
             </select>
             <input type="text" formControlName="subcategoryName" placeholder="Nueva subcategoria" />
-            <button type="button" (click)="addSubcategory()">Agregar</button>
+            <button type="button" (click)="addSubcategory()" [disabled]="isSubmittingCatalog()">
+              {{ isSubmittingCatalog() ? 'Agregando...' : 'Agregar' }}
+            </button>
           </div>
 
           @for (category of activeCategories; track category.id) {
@@ -385,8 +421,9 @@
                       type="button"
                       class="soft"
                       (click)="deactivateSubcategory(category.id, subcategory.id)"
+                      [disabled]="!!deactivatingKey()"
                     >
-                      Desactivar
+                      {{ deactivatingKey() === ('subcategory:' + category.id + ':' + subcategory.id) ? 'Desactivando...' : 'Desactivar' }}
                     </button>
                   </li>
                 }
@@ -406,14 +443,23 @@
                 <option value="MEMBER">MEMBER</option>
                 <option value="ADMIN">ADMIN</option>
               </select>
-              <button type="button" (click)="createUser()">Crear usuario</button>
+              <button type="button" (click)="createUser()" [disabled]="isCreatingUser()">
+                {{ isCreatingUser() ? 'Creando...' : 'Crear usuario' }}
+              </button>
             </div>
             <ul class="list compact">
               @for (user of users(); track user.id) {
                 @if (user.isActive) {
                   <li>
                     <span>{{ user.name }} · {{ user.email }} · {{ user.role }}</span>
-                    <button type="button" class="soft" (click)="deactivateUser(user.id)">Desactivar</button>
+                    <button
+                      type="button"
+                      class="soft"
+                      (click)="deactivateUser(user.id)"
+                      [disabled]="!!deactivatingKey()"
+                    >
+                      {{ deactivatingKey() === ('user:' + user.id) ? 'Desactivando...' : 'Desactivar' }}
+                    </button>
                   </li>
                 }
               }

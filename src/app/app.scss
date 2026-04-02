@@ -268,6 +268,34 @@ h1 {
 	animation: slide-in 300ms ease-out;
 }
 
+.success-banner {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 1rem;
+	padding: 0.75rem 1rem;
+	margin: 1rem 0;
+	background-color: #e5f7e9;
+	border-left: 4px solid #2f9e44;
+	color: #1b5e2b;
+	border-radius: 4px;
+	animation: slide-in 300ms ease-out;
+
+	button {
+		background: none;
+		border: none;
+		color: inherit;
+		cursor: pointer;
+		font-size: 1.2rem;
+		padding: 0;
+		flex-shrink: 0;
+
+		&:hover {
+			color: #2f9e44;
+		}
+	}
+}
+
 .tabs {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -342,6 +370,11 @@ textarea {
 	font-weight: 800;
 	background: linear-gradient(120deg, var(--orange), var(--orange-deep));
 	color: white;
+
+	&:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
 }
 
 .list {
@@ -433,6 +466,11 @@ textarea {
 	background: var(--teal);
 	color: white;
 	font-weight: 700;
+
+	&:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
 }
 
 .soft {
