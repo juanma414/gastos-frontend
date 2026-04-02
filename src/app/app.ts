@@ -489,7 +489,13 @@ export class App implements OnInit {
         error: (err) => {
           console.error('Error saving expense:', err);
           this.successMessage.set('');
-          this.errorMessage.set('Error al guardar el gasto');
+          const status = Number(err?.status ?? 0);
+          const backendMessage = typeof err?.error?.error === 'string' ? err.error.error : null;
+          if (status === 409 && backendMessage) {
+            this.errorMessage.set(backendMessage);
+          } else {
+            this.errorMessage.set('Error al guardar el gasto');
+          }
           this.isSavingExpense.set(false);
         }
       });
