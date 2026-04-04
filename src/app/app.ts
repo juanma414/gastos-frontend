@@ -54,6 +54,7 @@ export class App implements OnInit {
   protected readonly title = signal('Registro de Gastos');
   protected readonly activeTab = signal<Tab>('carga');
   protected readonly isLoading = signal(false);
+  protected readonly isLoadingExpenses = signal(false);
   protected readonly isSavingExpense = signal(false);
   protected readonly isSubmittingCatalog = signal(false);
   protected readonly isCreatingUser = signal(false);
@@ -171,6 +172,8 @@ export class App implements OnInit {
       return;
     }
 
+    this.isLoading.set(true);
+
     this.api.me().subscribe({
       next: (user) => {
         this.currentUser.set(user);
@@ -182,6 +185,7 @@ export class App implements OnInit {
       error: () => {
         this.api.clearToken();
         this.currentUser.set(null);
+        this.isLoading.set(false);
       }
     });
   }
@@ -233,6 +237,7 @@ export class App implements OnInit {
     this.currentUser.set(null);
     this.users.set([]);
     this.expenses.set([]);
+    this.isLoadingExpenses.set(false);
     this.errorMessage.set('');
     this.passwordForm.reset();
     this.activeTab.set('carga');
@@ -333,7 +338,17 @@ export class App implements OnInit {
 
   private loadData(): void {
     this.isLoading.set(true);
+    this.isLoadingExpenses.set(true);
     this.errorMessage.set('');
+    let pendingBaseRequests = 3;
+
+    const completeBaseRequest = (): void => {
+      pendingBaseRequests -= 1;
+      if (pendingBaseRequests <= 0) {
+        this.ensureFormDefaults();
+        this.isLoading.set(false);
+      }
+    };
 
     // Load categories first (needed for subcategories)
     this.api.getCategories().subscribe({
@@ -346,12 +361,13 @@ export class App implements OnInit {
             subcategories: cat.subcategories || []
           }))
         );
-        this.ensureFormDefaults();
+        completeBaseRequest();
       },
       error: (err) => {
         console.error('Error loading categories:', err);
         this.errorMessage.set('Error cargando categorías');
         this.loadCatalogsFromStorage();
+        completeBaseRequest();
       }
     });
 
@@ -359,11 +375,12 @@ export class App implements OnInit {
     this.api.getPeople().subscribe({
       next: (people) => {
         this.people.set(people.map((p) => ({ id: p.id, name: p.name, isActive: p.isActive })));
-        this.ensureFormDefaults();
+        completeBaseRequest();
       },
       error: (err) => {
         console.error('Error loading people:', err);
         this.loadCatalogsFromStorage();
+        completeBaseRequest();
       }
     });
 
@@ -371,11 +388,12 @@ export class App implements OnInit {
     this.api.getPlaces().subscribe({
       next: (places) => {
         this.places.set(places.map((p) => ({ id: p.id, name: p.name, isActive: p.isActive })));
-        this.ensureFormDefaults();
+        completeBaseRequest();
       },
       error: (err) => {
         console.error('Error loading places:', err);
         this.loadCatalogsFromStorage();
+        completeBaseRequest();
       }
     });
 
@@ -403,11 +421,11 @@ export class App implements OnInit {
             };
           })
         );
-        this.isLoading.set(false);
+        this.isLoadingExpenses.set(false);
       },
       error: (err) => {
         console.error('Error loading expenses:', err);
-        this.isLoading.set(false);
+        this.isLoadingExpenses.set(false);
       }
     });
   }

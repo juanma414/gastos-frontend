@@ -151,7 +151,9 @@
 
     <section class="panel">
       <h2>Ultimos gastos</h2>
-      @if (expenses().length === 0) {
+      @if (isLoadingExpenses()) {
+        <p class="empty">Cargando últimos gastos...</p>
+      } @else if (expenses().length === 0) {
         <p class="empty">Todavia no hay gastos guardados.</p>
       } @else {
         <ul class="list">
