@@ -36,20 +36,27 @@
   }
 
   @if (!isAuthenticated) {
-    <section class="panel login-panel" [formGroup]="loginForm">
+    <section class="panel login-panel" [formGroup]="loginForm" [attr.aria-busy]="isLoading()">
       <h2>Iniciar sesión</h2>
       <div class="grid">
         <label>
           Usuario o email
-          <input type="text" formControlName="identifier" placeholder="Ludmi o ludmila.cardinale@gmail.com" />
+          <input type="text" formControlName="identifier" placeholder="Ludmi o ludmila.cardinale@gmail.com" [disabled]="isLoading()" />
         </label>
 
         <label>
           Contraseña
-          <input type="password" formControlName="password" placeholder="******" />
+          <input type="password" formControlName="password" placeholder="******" [disabled]="isLoading()" />
         </label>
       </div>
-      <button class="save" type="button" (click)="login()">Entrar</button>
+      <button class="save login-submit" type="button" (click)="login()" [disabled]="isLoading()">
+        @if (isLoading()) {
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Ingresando...</span>
+        } @else {
+          <span>Entrar</span>
+        }
+      </button>
     </section>
   } @else {
     @if (activeTab() !== 'perfil') {

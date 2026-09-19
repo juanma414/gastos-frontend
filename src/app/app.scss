@@ -75,6 +75,29 @@ h1 {
 	margin: 1rem auto 0;
 }
 
+.login-submit {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	min-width: 7.5rem;
+}
+
+.spinner {
+	width: 1rem;
+	height: 1rem;
+	border: 2px solid currentColor;
+	border-right-color: transparent;
+	border-radius: 50%;
+	animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
 .creds {
 	margin-top: 0.7rem;
 	font-size: 0.82rem;
